@@ -1,0 +1,48 @@
+import pylab as pl
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+def imdiagnostics(data, axis=pl.gca()):
+    dstd = data.std()
+    dmean = data.mean()
+    im = axis.imshow(data,vmin=dmean-5*dstd,vmax=dmean+5*dstd,norm=asinh_norm.AsinhNorm())
+    divider = make_axes_locatable(axis)
+
+    right = divider.append_axes("right", size="15%", pad=0.05)
+    vright = divider.append_axes("right", size="15%", pad=0.05)
+    meany = data.mean(axis=1)
+    erry = data.std(axis=1)
+
+    right.plot(meany,np.arange(meany.size))
+    right.set_ylim(0,meany.size-1)
+    right.set_yticks([])
+    right.set_xticks([meany.min(),np.median(meany),meany.max()])
+    pl.setp(right.xaxis.get_majorticklabels(), rotation=70)
+    right.set_title("$\mu$")
+
+    vright.plot(erry,np.arange(erry.size))
+    vright.set_ylim(0,erry.size-1)
+    vright.set_yticks([])
+    vright.set_xticks([erry.min(),np.median(erry),erry.max()])
+    vright.set_xlabel("$\sigma$")
+    vright.xaxis.set_ticks_position('top')
+    pl.setp(vright.xaxis.get_majorticklabels(), rotation=70)
+
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    pl.colorbar(im, cax=cax)
+
+    top = divider.append_axes("top", size="15%", pad=0.05)
+    vtop = divider.append_axes("top", size="15%", pad=0.05)
+    meanx = data.mean(axis=0)
+    errx = data.std(axis=0)
+    top.plot(np.arange(meanx.size),meanx)
+    top.set_xlim(0,meanx.size-1)
+    top.set_xticks([])
+    top.set_yticks([meanx.min(),np.median(meanx),meanx.max()])
+    pl.setp(top.yaxis.get_majorticklabels(), rotation=20)
+    top.set_title("$\mu$")
+    vtop.plot(np.arange(errx.size),errx,)
+    vtop.set_xlim(0,errx.size-1)
+    vtop.set_xticks([])
+    vtop.set_yticks([errx.min(),np.median(errx),errx.max()])
+    vtop.set_ylabel("$\sigma$")
+    pl.setp(vtop.yaxis.get_majorticklabels(), rotation=-20)

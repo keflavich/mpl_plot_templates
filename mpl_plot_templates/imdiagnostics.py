@@ -6,7 +6,7 @@ import numpy as np
 def imdiagnostics(data, axis=pl.gca()):
     dstd = data.std()
     dmean = data.mean()
-    im = axis.imshow(data,vmin=dmean-5*dstd,vmax=dmean+5*dstd,norm=asinh_norm.AsinhNorm())
+    im = axis.imshow(data,vmin=dmean-5*dstd,vmax=dmean+5*dstd,norm=asinh_norm.AsinhNorm(),aspect=data.shape[1]/float(data.shape[0]))
     divider = make_axes_locatable(axis)
 
     right = divider.append_axes("right", size="15%", pad=0.05)

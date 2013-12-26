@@ -18,6 +18,7 @@ def adaptive_param_plot(x,y,bins=10,threshold=5,
                         mesh=False,
                         contourspacing=linlogspace,
                         mesh_alpha=0.5,
+                        norm=None,
                         **kwargs):
     """
     Plot contours where the density of data points to be plotted is too high
@@ -39,7 +40,7 @@ def adaptive_param_plot(x,y,bins=10,threshold=5,
 
     cx = (bx[1:]+bx[:-1])/2.
     cy = (by[1:]+by[:-1])/2.
-    levels = contourspacing(threshold+0.5,H.max(),ncontours)
+    levels = contourspacing(threshold-0.5,H.max(),ncontours)
     #levels = contourspacing(0,H.max(),ncontours)
 
     cm = mpl.cm.get_cmap()
@@ -47,9 +48,9 @@ def adaptive_param_plot(x,y,bins=10,threshold=5,
     cm.set_bad((0,0,0,0))
 
     if fill:
-        con = pl.contourf(cx,cy,H.T,levels=levels,**kwargs)
+        con = pl.contourf(cx,cy,H.T,levels=levels,norm=norm,**kwargs)
     else:
-        con = pl.contour(cx,cy,H.T,levels=levels,**kwargs)
+        con = pl.contour(cx,cy,H.T,levels=levels,norm=norm,**kwargs)
     if mesh:
         mesh = pl.pcolormesh(bx,by,H.T, **kwargs)
         mesh.set_alpha(mesh_alpha)

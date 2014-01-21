@@ -73,10 +73,11 @@ def adaptive_param_plot(x,y,
     # set the number of bins to be an integer value, which can be extracted
     # from an array-style bin set
     if hasattr(bins,'ndim') and bins.ndim == 2:
-        nbinsx,nbinsy = bins.shape
+        # If you define the bins as an array, they define the BIN EDGES, so nbins=len(bins)-1
+        nbinsx,nbinsy = bins.shape[0]-1,bins.shape[1]-1
     else:
         try:
-            nbinsx = nbinsy = len(bins)
+            nbinsx = nbinsy = len(bins)-1
         except TypeError:
             nbinsx = nbinsy = bins
 
@@ -84,15 +85,23 @@ def adaptive_param_plot(x,y,
 
     # determine the locations of each pixel
     dx,dy = multidigitize(x[ok],y[ok],bx,by)
-    # anything that belongs past the last bin goes into the last bin instead
-    dx[dx==nbinsx+1] = nbinsx
-    dy[dy==nbinsy+1] = nbinsy
 
-    plottable = H <= threshold
+    # anything beyond the range of the histogram bins defaults to plottable=True
+    # need +1 because anything <bins.min() or >bins.max() is on the edges...
+    plottable = np.ones([nbinsx+2,nbinsy+2], dtype='bool')
+    # Need a cropped version of "plottable" to index H
+    # This is a view on plottable, so should result in inplace modification...
+    # (this version does not include the points > bins.max() and < bins.min(),
+    # which will all be plotted)
+    plottable_hist = plottable[1:-1,1:-1]
+    assert H.shape == plottable_hist.shape
+    # points are plottable if below the threshold
+    plottable_hist[H > threshold] = False
+
     #H[plottable] = np.nan
-    H[plottable] = 0
+    H[plottable_hist] = 0
     #H = np.ma.masked_where(plottable,H)
-    toplot = plottable[dx-1,dy-1]
+    toplot = plottable[dx,dy]
 
     cx = (bx[1:]+bx[:-1])/2.
     cy = (by[1:]+by[:-1])/2.

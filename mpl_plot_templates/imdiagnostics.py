@@ -4,7 +4,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import asinh_norm
 import numpy as np
 
-def imdiagnostics(data, axis=None, square_aspect=False):
+def imdiagnostics(data, axis=None, square_aspect=False, percentiles=None):
     if axis is None:
         fig = pl.gcf()
         axis = pl.gca()
@@ -36,11 +36,14 @@ def imdiagnostics(data, axis=None, square_aspect=False):
     vright = divider.append_axes("right", size="15%", pad=0.05)
     #vright = divider.new_horizontal(size="15%", pad=0.05, sharey=axis)
     #fig.add_axes(vright)
-    meany = data.mean(axis=1)
+    if percentiles is not None:
+        meany = np.array([np.percentile(data, p, axis=1) for p in percentiles])
+    else:
+        meany = data.mean(axis=1)
     erry = data.std(axis=1)
 
-    right.plot(meany,np.arange(meany.size))
-    right.set_ylim(0,meany.size-1)
+    right.plot(meany.T,np.arange(data.shape[0]))
+    right.set_ylim(0,data.shape[0]-1)
     right.set_yticks([])
     right.set_xticks([meany.min(),(meany.max()+meany.min())/2.,meany.max()])
     pl.setp(right.xaxis.get_majorticklabels(), rotation=70)
@@ -64,10 +67,14 @@ def imdiagnostics(data, axis=None, square_aspect=False):
     #fig.add_axes(top)
     #fig.add_axes(vtop)
 
-    meanx = data.mean(axis=0)
+    if percentiles is not None:
+        meanx = np.array([np.percentile(data, p, axis=0) for p in percentiles])
+    else:
+        meanx = data.mean(axis=0)
+
     errx = data.std(axis=0)
-    top.plot(np.arange(meanx.size),meanx)
-    top.set_xlim(0,meanx.size-1)
+    top.plot(np.arange(data.shape[1]),meanx.T)
+    top.set_xlim(0,data.shape[1]-1)
     top.set_xticks([])
     top.set_yticks([meanx.min(),(meanx.max()+meanx.min())/2.,meanx.max()])
     pl.setp(top.yaxis.get_majorticklabels(), rotation=20)

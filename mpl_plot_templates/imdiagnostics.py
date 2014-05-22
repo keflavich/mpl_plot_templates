@@ -12,8 +12,14 @@ def imdiagnostics(data, axis=None, square_aspect=False, percentiles=None):
     else:
         fig = axis.get_figure()
 
-    dstd = data.std()
-    dmean = data.mean()
+    bad = np.isnan(data)
+    if bad.any():
+        dstd = data[~bad].std()
+        dmean = data[~bad].mean()
+    else:
+        dstd = data.std()
+        dmean = data.mean()
+
     if square_aspect:
         im = axis.imshow(data,vmin=dmean-5*dstd,vmax=dmean+5*dstd,norm=asinh_norm.AsinhNorm(),
                          aspect=data.shape[1]/float(data.shape[0]))

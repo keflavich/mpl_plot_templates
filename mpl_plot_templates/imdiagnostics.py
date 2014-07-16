@@ -4,7 +4,16 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import asinh_norm
 import numpy as np
 
-def imdiagnostics(data, axis=None, square_aspect=False, percentiles=None):
+def imdiagnostics(data, axis=None, square_aspect=False, percentiles=None,
+                  second_xaxis=None):
+    """
+    Create a 'waterfall plot' of (timestream) data
+
+    Parameters
+    ----------
+    second_xaxis : None or `numpy.ndarray`
+        An array of shape data.shape[1] describing the X-axis
+    """
     if axis is None:
         fig = pl.gcf()
         axis = pl.gca()
@@ -51,14 +60,20 @@ def imdiagnostics(data, axis=None, square_aspect=False, percentiles=None):
     right.plot(meany.T,np.arange(data.shape[0]))
     right.set_ylim(0,data.shape[0]-1)
     right.set_yticks([])
-    right.set_xticks([meany.min(),(meany.max()+meany.min())/2.,meany.max()])
+    if meany.max() > meany.min():
+        right.set_xticks([meany.min(),(meany.max()+meany.min())/2.,meany.max()])
+    else:
+        right.set_xticks([])
     pl.setp(right.xaxis.get_majorticklabels(), rotation=70)
     right.set_title("$\mu$")
 
     vright.plot(erry,np.arange(erry.size))
     vright.set_ylim(0,erry.size-1)
     vright.set_yticks([])
-    vright.set_xticks([erry.min(),(erry.max()+erry.min())/2.,erry.max()])
+    if erry.max()>erry.min():
+        vright.set_xticks([erry.min(),(erry.max()+erry.min())/2.,erry.max()])
+    else:
+        vright.set_xticks([])
     vright.set_xlabel("$\sigma$")
     vright.xaxis.set_ticks_position('top')
     pl.setp(vright.xaxis.get_majorticklabels(), rotation=70)
@@ -82,15 +97,32 @@ def imdiagnostics(data, axis=None, square_aspect=False, percentiles=None):
     top.plot(np.arange(data.shape[1]),meanx.T)
     top.set_xlim(0,data.shape[1]-1)
     top.set_xticks([])
-    top.set_yticks([meanx.min(),(meanx.max()+meanx.min())/2.,meanx.max()])
+    if meanx.max()>meanx.min():
+        top.set_yticks([meanx.min(),(meanx.max()+meanx.min())/2.,meanx.max()])
+    else:
+        top.set_yticks([])
     pl.setp(top.yaxis.get_majorticklabels(), rotation=20)
     top.set_title("$\mu$")
     vtop.plot(np.arange(errx.size),errx,)
     vtop.set_xlim(0,errx.size-1)
-    vtop.set_xticks([])
-    vtop.set_yticks([errx.min(),(errx.max()+errx.min())/2.,errx.max()])
+    if errx.max()>errx.min():
+        vtop.set_yticks([errx.min(),(errx.max()+errx.min())/2.,errx.max()])
+    else:
+        vtop.set_yticks([])
     vtop.set_ylabel("$\sigma$")
     pl.setp(vtop.yaxis.get_majorticklabels(), rotation=-20)
+
+    if second_xaxis is not None:
+        vtop.xaxis.set_ticks_position('top')
+        vtop.xaxis.set_label_position('top')
+        inds = np.linspace(0, errx.size, 8).astype('int')
+        #inds = axis.xaxis.get_ticklocs()
+        inds = inds[(inds>0) & (inds<errx.size)].astype('int')
+        vtop.xaxis.set_ticks(inds)
+        vtop.xaxis.set_ticklabels(["{0:0.3g}".format(x) for x in second_xaxis[inds]])
+        vtop.set_xlim(0,errx.size-1)
+    else:
+        vtop.set_xticks([])
 
     # debug; not needed
     #axis.set_xlim(xlim)

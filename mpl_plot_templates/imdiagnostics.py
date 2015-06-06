@@ -119,7 +119,7 @@ def imdiagnostics(data, axis=None, square_aspect=False, percentiles=None,
         #inds = axis.xaxis.get_ticklocs()
         inds = inds[(inds>0) & (inds<errx.size)].astype('int')
         vtop.xaxis.set_ticks(inds)
-        vtop.xaxis.set_ticklabels(["{0:0.3g}".format(x) for x in second_xaxis[inds]])
+        vtop.xaxis.set_ticklabels(["{0:0.4g}".format(x) for x in second_xaxis[inds]])
         vtop.set_xlim(0,errx.size-1)
     else:
         vtop.set_xticks([])

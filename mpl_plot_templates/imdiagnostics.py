@@ -1,7 +1,7 @@
 import pylab as pl
 #import mpl_toolkits.axes_grid.parasite_axes as mpltk
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-import asinh_norm
+from . import asinh_norm
 import numpy as np
 
 def imdiagnostics(data, axis=None, square_aspect=False, percentiles=None,

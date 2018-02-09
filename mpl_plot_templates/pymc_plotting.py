@@ -69,7 +69,7 @@ def hist2d(MC, varname1, varname2, varslice=None,
     yax = np.linspace(yvals.min(),yvals.max(),histvals.shape[0])
     if axis is not None:
         contourcmd = eval('axis.'+contourcmd.__name__)
-    cntr = contourcmd(xax, yax, histvals.swapaxes(0,1), levels+[histvals.max()], colors=colors)
+    cntr = contourcmd(xax, yax, histvals.swapaxes(0,1), np.unique(levels+[histvals.max()]), colors=colors)
     # hack to fix opacity
     axis.set_xlabel(varname1)
     axis.set_ylabel(varname2)

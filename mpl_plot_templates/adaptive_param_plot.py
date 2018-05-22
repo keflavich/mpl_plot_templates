@@ -16,6 +16,7 @@ def adaptive_param_plot(x,y,
                         marker='.',
                         marker_color=None,
                         ncontours=5,
+                        levels=None,
                         fill=False,
                         mesh=False,
                         contourspacing=linlogspace,
@@ -44,6 +45,8 @@ def adaptive_param_plot(x,y,
         Any valid marker color
     ncontours: int
         Number of contour levels
+    levels: None or list 
+        Optional override for automatically computed levels
     fill: bool
         Use filled contours?
     mesh: bool
@@ -105,7 +108,8 @@ def adaptive_param_plot(x,y,
 
     cx = (bx[1:]+bx[:-1])/2.
     cy = (by[1:]+by[:-1])/2.
-    levels = contourspacing(threshold-0.5,H.max(),ncontours)
+    if levels is None:
+        levels = contourspacing(threshold-0.5,H.max(),ncontours)
     #levels = contourspacing(0,H.max(),ncontours)
 
     if cmap is None:
@@ -124,12 +128,13 @@ def adaptive_param_plot(x,y,
     if 'linestyle' in kwargs:
         kwargs.pop('linestyle')
 
-    axis.plot(x[ok][toplot],
-              y[ok][toplot],
-              linestyle='none',
-              marker=marker,
-              markerfacecolor=marker_color,
-              markeredgecolor=marker_color,
-              **kwargs)
+    if marker not in ('none', None):
+        axis.plot(x[ok][toplot],
+                  y[ok][toplot],
+                  linestyle='none',
+                  marker=marker,
+                  markerfacecolor=marker_color,
+                  markeredgecolor=marker_color,
+                  **kwargs)
 
     return cx,cy,H,x[ok][toplot],y[ok][toplot]

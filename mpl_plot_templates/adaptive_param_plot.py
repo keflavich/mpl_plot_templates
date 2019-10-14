@@ -24,6 +24,7 @@ def adaptive_param_plot(x,y,
                         norm=None,
                         axis=None,
                         cmap=None,
+                        percentilelevels=None,
                         **kwargs):
     """
     Plot contours where the density of data points to be plotted is too high
@@ -77,7 +78,7 @@ def adaptive_param_plot(x,y,
     # from an array-style bin set
     if hasattr(bins,'ndim') and bins.ndim == 2:
         # If you define the bins as an array, they define the BIN EDGES, so nbins=len(bins)-1
-        nbinsx,nbinsy = bins.shape[0]-1,bins.shape[1]-1
+        nbinsx,nbinsy = bins.shape[1]-1,bins.shape[1]-1
     else:
         try:
             nbinsx = nbinsy = len(bins)-1
@@ -109,7 +110,12 @@ def adaptive_param_plot(x,y,
     cx = (bx[1:]+bx[:-1])/2.
     cy = (by[1:]+by[:-1])/2.
     if levels is None:
-        levels = contourspacing(threshold-0.5,H.max(),ncontours)
+        if percentilelevels is not None:
+            sortedH = np.sort(H.flat)
+            cumfrac = np.cumsum(sortedH) / H.sum()
+            levels = [sortedH[np.argmin(np.abs(cumfrac - plev))] for plev in percentilelevels]
+        else:
+            levels = contourspacing(threshold-0.5,H.max(),ncontours)
     #levels = contourspacing(0,H.max(),ncontours)
 
     if cmap is None:

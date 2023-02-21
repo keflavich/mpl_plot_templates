@@ -45,11 +45,11 @@ def mark_inset_otherdata_full(axins, parent_ax, data, loc1=1, loc2=3, edgecolor=
 
     return mark_inset_otherdata(axins, parent_ax, bl, tr, loc1=loc1, loc2=loc2, edgecolor=edgecolor)
 
-def mark_inset_generic(axins, parent_ax, data, loc1=1, loc2=3, edgecolor='b'):
+def mark_inset_generic(axins, parent_ax, data, loc1=1, loc2=3, loc1in=None, loc2in=None, edgecolor='b', zorder1=100, zorder2=100, polyzorder=1):
     bl = axins.wcs.pixel_to_world(0, 0)
-    br = axins.wcs.pixel_to_world(0, data.shape[0])
-    tl = axins.wcs.pixel_to_world(data.shape[1], 0) # x,y not y,x
-    tr = axins.wcs.pixel_to_world(*data.shape[::-1]) # x,y not y,x
+    br = axins.wcs.pixel_to_world(data.shape[1], 0)
+    tl = axins.wcs.pixel_to_world(0, data.shape[0]) # x,y not y,x
+    tr = axins.wcs.pixel_to_world(data.shape[1], data.shape[0]) # x,y not y,x
 
     frame = parent_ax.wcs.wcs.radesys.lower()
     frame = ax.wcs.world_axis_physical_types[0].split(".")[1]
@@ -60,37 +60,31 @@ def mark_inset_generic(axins, parent_ax, data, loc1=1, loc2=3, edgecolor='b'):
     trt = tr.transform_to(frame)
     xys = [parent_ax.wcs.wcs_world2pix([[crd.spherical.lon.deg,
                                          crd.spherical.lat.deg]],0)[0]
-           for crd in (blt, brt, trt, tlt, blt)]
+           for crd in (trt, tlt, blt, brt, trt)]
 
     markinkwargs = dict(fc='none', ec=edgecolor)
-    ppoly = Polygon(xys, fill=False, **markinkwargs)
+    ppoly = Polygon(xys, fill=False, zorder=polyzorder, **markinkwargs)
     parent_ax.add_patch(ppoly)
 
-    x1,y1,x2,y2 = axins.bbox.extents
-    print(axins.bbox.extents)
-    corners = parent_ax.transData.transform(xys)
-    print(xys, corners)
+    corners = parent_ax.transData.inverted().transform(xys)
 
-    # p1 = PathPatch(Path([[x1, y1], corners[loc1]]),
-    #                color=edgecolor)
-    # axins.figure.add_patch(p1)
-    # p1.set_clip_on(False)
-    # p2 = PathPatch(Path([[x2, y2], corners[loc2]]),
-    #                color=edgecolor)
-    # axins.figure.add_patch(p2)
-    # p2.set_clip_on(False)
+    axcorners = [(1,1), (0,1), (0,0), (1,0)]
+    corners = [(crd.spherical.lon.deg, crd.spherical.lat.deg)
+               for crd in (trt, tlt, blt, brt)]
 
-    con1 = ConnectionPatch(xyA=(x1, y1), coordsA=axins.transData,
-                           xyB=corners[loc1], coordsB=parent_ax.transData,
-                           # linestyle='--', color='black', zorder=-1)
-                           linestyle='--', color=edgecolor, zorder=-1)
-    con2 = ConnectionPatch(xyA=x2, coordsA=axins.transData,
-                           xyB=corners[loc2], coordsB=parent_ax.transData,
-                           linestyle='--', color=edgecolor, zorder=-1)
-    #axins.add_patch(con1)
-    #axins.add_patch(con2)
-    fig.add_patch(con1)
-    fig.add_patch(con2)
+    if loc1in is None:
+        loc1in = loc1
+    if loc2in is None:
+        loc2in = loc2
+
+    con1 = ConnectionPatch(xyA=axcorners[loc1-1], coordsA='axes fraction', axesA=axins,
+                           xyB=corners[loc1in-1], coordsB=parent_ax.get_transform('world'), axesB=parent_ax,
+                           linestyle='-', color=edgecolor, zorder=zorder1)
+    con2 = ConnectionPatch(xyA=axcorners[loc2-1], coordsA='axes fraction', axesA=axins,
+                           xyB=corners[loc2in-1], coordsB=parent_ax.get_transform('world'), axesB=parent_ax,
+                           linestyle='-', color=edgecolor, zorder=zorder2)
+    fig.add_artist(con1)
+    fig.add_artist(con2)
 
 def hide_ticks(ax):
     ra = ax.coords['ra']

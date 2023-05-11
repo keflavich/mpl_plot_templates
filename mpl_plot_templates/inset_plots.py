@@ -1,3 +1,4 @@
+import numpy as np
 from astropy import units as u
 from astropy import coordinates
 from astropy.stats import mad_std

@@ -13,7 +13,7 @@ from matplotlib.patches import Polygon, PathPatch, ConnectionPatch
 def mark_inset_otherdata(axins, parent_ax, bl, tr, loc1, loc2, edgecolor='b'):
 
     frame = parent_ax.wcs.wcs.radesys.lower()
-    frame = ax.wcs.world_axis_physical_types[0].split(".")[1]
+    frame = axins.wcs.world_axis_physical_types[0].split(".")[1]
 
     blt = bl.transform_to(frame)
     trt = tr.transform_to(frame)

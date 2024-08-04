@@ -65,7 +65,7 @@ def imdiagnostics(data, axis=None, square_aspect=False, percentiles=None,
     else:
         right.set_xticks([])
     pl.setp(right.xaxis.get_majorticklabels(), rotation=70)
-    right.set_title("$\mu$")
+    right.set_title(r"$\mu$")
 
     vright.plot(erry,np.arange(erry.size))
     vright.set_ylim(0,erry.size-1)
@@ -74,7 +74,7 @@ def imdiagnostics(data, axis=None, square_aspect=False, percentiles=None,
         vright.set_xticks([erry.min(),(erry.max()+erry.min())/2.,erry.max()])
     else:
         vright.set_xticks([])
-    vright.set_xlabel("$\sigma$")
+    vright.set_xlabel(r"$\sigma$")
     vright.xaxis.set_ticks_position('top')
     pl.setp(vright.xaxis.get_majorticklabels(), rotation=70)
 
@@ -102,14 +102,14 @@ def imdiagnostics(data, axis=None, square_aspect=False, percentiles=None,
     else:
         top.set_yticks([])
     pl.setp(top.yaxis.get_majorticklabels(), rotation=20)
-    top.set_title("$\mu$")
+    top.set_title("r$\mu$")
     vtop.plot(np.arange(errx.size),errx,)
     vtop.set_xlim(0,errx.size-1)
     if errx.max()>errx.min():
         vtop.set_yticks([errx.min(),(errx.max()+errx.min())/2.,errx.max()])
     else:
         vtop.set_yticks([])
-    vtop.set_ylabel("$\sigma$")
+    vtop.set_ylabel(r"$\sigma$")
     pl.setp(vtop.yaxis.get_majorticklabels(), rotation=-20)
 
     if second_xaxis is not None:

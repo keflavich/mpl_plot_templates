@@ -143,4 +143,4 @@ def adaptive_param_plot(x,y,
                   markeredgecolor=marker_color,
                   **kwargs)
 
-    return cx,cy,H,x[ok][toplot],y[ok][toplot]
+    return cx,cy,H,x[ok][toplot],y[ok][toplot],levels

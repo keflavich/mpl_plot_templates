@@ -24,6 +24,7 @@ def adaptive_param_plot(x,y,
                         norm=None,
                         axis=None,
                         cmap=None,
+                        colors=None,
                         percentilelevels=None,
                         **kwargs):
     """
@@ -118,15 +119,15 @@ def adaptive_param_plot(x,y,
             levels = contourspacing(threshold-0.5,H.max(),ncontours)
     #levels = contourspacing(0,H.max(),ncontours)
 
-    if cmap is None:
+    if cmap is None and colors is None:
         cmap = mpl.cm.get_cmap()
         cmap.set_under((0,0,0,0))
         cmap.set_bad((0,0,0,0))
 
     if fill:
-        con = axis.contourf(cx,cy,H.T,levels=levels,norm=norm,cmap=cmap,**kwargs)
+        con = axis.contourf(cx,cy,H.T,levels=levels,norm=norm,cmap=cmap,colors=colors,**kwargs)
     else:
-        con = axis.contour(cx,cy,H.T,levels=levels,norm=norm,cmap=cmap,**kwargs)
+        con = axis.contour(cx,cy,H.T,levels=levels,norm=norm,cmap=cmap,colors=colors,**kwargs)
     if mesh:
         mesh = axis.pcolormesh(bx,by,H.T, **kwargs)
         mesh.set_alpha(mesh_alpha)

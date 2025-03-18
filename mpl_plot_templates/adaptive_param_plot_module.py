@@ -77,9 +77,9 @@ def adaptive_param_plot(x,y,
 
     # set the number of bins to be an integer value, which can be extracted
     # from an array-style bin set
-    if hasattr(bins,'ndim') and bins.ndim == 2:
+    if (hasattr(bins,'ndim') and ((bins.ndim == 2) or (len(bins) == 2))):
         # If you define the bins as an array, they define the BIN EDGES, so nbins=len(bins)-1
-        nbinsx,nbinsy = bins.shape[1]-1,bins.shape[1]-1
+        nbinsx,nbinsy = bins[0].size-1, bins[1].size-1
     else:
         try:
             nbinsx = nbinsy = len(bins)-1

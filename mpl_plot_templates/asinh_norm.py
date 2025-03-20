@@ -11,7 +11,10 @@ Some of the ideas used are from `aplpy <aplpy.github.com>`_
 
 """
 from matplotlib.colors import Normalize
-from matplotlib.cm import cbook
+try:
+    from matplotlib.cm import cbook
+except ImportError:
+    from matplotlib import cbook
 from numpy import ma
 import numpy as np
 

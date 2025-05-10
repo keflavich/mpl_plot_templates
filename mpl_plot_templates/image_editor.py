@@ -70,13 +70,20 @@ class ImageEditor:
         self.current_image = None
         self.photo = None
 
+        # Zooming variables
+        self.zoom_active = False
+        self.zoom_factor = 1.0
+        self.zoom_x = None  # Center X of the zoomed area
+        self.zoom_y = None  # Center Y of the zoomed area
+        self.zoom_rect_id = None  # For highlighting the zoom area
+
         # Initialize slider variables for global adjustments
         self.hue_var = tk.DoubleVar(value=0)
         self.saturation_var = tk.DoubleVar(value=0)
         self.value_var = tk.DoubleVar(value=0)
         self.contrast_var = tk.DoubleVar(value=0)
         self.brightness_var = tk.DoubleVar(value=0)
-        self.alpha_var = tk.DoubleVar(value=100)
+        self.alpha_var = tk.DoubleVar(value=100)  # Keep this for consistency, but won't be used in UI
 
         # RGB channel HSV rotation variables
         self.r_hsv_var = tk.DoubleVar(value=0)
@@ -113,6 +120,7 @@ class ImageEditor:
         ttk.Button(self.buttons_frame, text="Load Image", command=self.load_image).grid(row=0, column=0, padx=5, pady=5)
         ttk.Button(self.buttons_frame, text="Save Image", command=self.save_image).grid(row=0, column=1, padx=5, pady=5)
         ttk.Button(self.buttons_frame, text="Export Code", command=self.export_code).grid(row=0, column=2, padx=5, pady=5)
+        ttk.Button(self.buttons_frame, text="Toggle Zoom", command=self.toggle_zoom).grid(row=0, column=3, padx=5, pady=5)
 
         # Create image display area (now on the right)
         self.canvas = tk.Canvas(self.main_frame, width=800, height=600, bg="#f0f0f0")
@@ -134,9 +142,9 @@ class ImageEditor:
         self.blue_frame = ttk.LabelFrame(self.controls_frame, text="Blue Channel Adjustments", padding="5")
         self.blue_frame.grid(row=3, column=0, sticky=(tk.W, tk.E), padx=5, pady=5)
 
-        # Create section for opacity/alpha
-        self.opacity_frame = ttk.LabelFrame(self.controls_frame, text="Opacity", padding="5")
-        self.opacity_frame.grid(row=4, column=0, sticky=(tk.W, tk.E), padx=5, pady=5)
+        # Replace opacity with zoom controls (same position)
+        self.zoom_frame = ttk.LabelFrame(self.controls_frame, text="Zoom Controls", padding="5")
+        self.zoom_frame.grid(row=4, column=0, sticky=(tk.W, tk.E), padx=5, pady=5)
 
         # Create global adjustment sliders
         self.create_slider("Hue", -180, 180, 0, 0, self.global_frame)
@@ -180,13 +188,32 @@ class ImageEditor:
         reset_blue_frame.grid(row=3, column=0, sticky=(tk.E, tk.W), padx=5, pady=5)
         ttk.Button(reset_blue_frame, text="Reset Blue Channel", command=self.reset_blue).grid(row=0, column=0, padx=5, pady=5)
 
-        # Create alpha/opacity slider
-        self.create_slider("Alpha", 0, 100, 0, 0, self.opacity_frame)
+        # Create zoom controls
+        ttk.Label(self.zoom_frame, text="Zoom Factor:").grid(row=0, column=0, padx=5, pady=2, sticky=tk.W)
+        self.zoom_scale = ttk.Scale(
+            self.zoom_frame,
+            from_=1.0,
+            to=10.0,
+            orient=tk.HORIZONTAL,
+            length=300,
+            command=self.update_zoom_factor
+        )
+        self.zoom_scale.set(1.0)
+        self.zoom_scale.grid(row=0, column=1, padx=5, pady=5, sticky=(tk.W, tk.E))
 
-        # Add reset all button to opacity frame
-        reset_all_frame = ttk.Frame(self.opacity_frame)
-        reset_all_frame.grid(row=1, column=0, sticky=(tk.E, tk.W), padx=5, pady=5)
-        ttk.Button(reset_all_frame, text="Reset All", command=self.reset_all).grid(row=0, column=0, padx=5, pady=5)
+        # Zoom level indicator
+        self.zoom_level_label = ttk.Label(self.zoom_frame, text="1.0x")
+        self.zoom_level_label.grid(row=0, column=2, padx=5, pady=5)
+
+        # Add reset zoom and reset all buttons
+        ttk.Button(self.zoom_frame, text="Reset Zoom", command=self.reset_zoom).grid(row=1, column=0, padx=5, pady=5)
+        ttk.Button(self.zoom_frame, text="Reset All", command=self.reset_all).grid(row=1, column=1, padx=5, pady=5)
+
+        # Make the zoom frame expandable
+        self.zoom_frame.columnconfigure(1, weight=1)
+
+        # Bind mouse events for setting zoom center - use ButtonRelease to avoid issues with drag
+        self.canvas.bind("<ButtonRelease-1>", self.set_zoom_center)
 
         # Bind slider events
         self.bind_slider_events()
@@ -266,16 +293,39 @@ class ImageEditor:
         )
         slider.grid(row=0, column=1, padx=5, pady=2, sticky=(tk.W, tk.E))
 
-        # Add value label
-        value_label = ttk.Label(slider_frame, text="0")
-        value_label.grid(row=0, column=2, padx=5, pady=2)
+        # Add value entry box instead of label
+        value_str = tk.StringVar(value=f"{var.get():.1f}")
+        value_entry = ttk.Entry(slider_frame, textvariable=value_str, width=6)
+        value_entry.grid(row=0, column=2, padx=5, pady=2)
 
-        # Setup dynamic updating of value label
-        def update_label(*args):
-            value_label.configure(text=f"{var.get():.1f}")
+        # Setup dynamic updating between slider and entry
+        def update_entry(*args):
+            value_str.set(f"{var.get():.1f}")
 
-        var.trace_add("write", update_label)
-        update_label()  # Initialize with current value
+        def update_slider(*args):
+            try:
+                # Get value from entry
+                value = float(value_str.get())
+                # Make sure it's within the slider range
+                if value < from_:
+                    value = from_
+                    value_str.set(f"{value:.1f}")
+                elif value > to:
+                    value = to
+                    value_str.set(f"{value:.1f}")
+                # Update the slider without triggering the trace again
+                var.set(value)
+            except ValueError:
+                # Reset to current slider value if invalid input
+                update_entry()
+
+        # Bind events
+        var.trace_add("write", update_entry)
+        value_entry.bind("<Return>", update_slider)
+        value_entry.bind("<FocusOut>", update_slider)
+
+        # Initialize with current value
+        update_entry()
 
         # Make slider expandable
         slider_frame.columnconfigure(1, weight=1)
@@ -293,7 +343,7 @@ class ImageEditor:
             self.red_frame,
             self.green_frame,
             self.blue_frame,
-            self.opacity_frame
+            self.zoom_frame
         ]
 
         # For each container, find all slider frames then the actual sliders
@@ -313,10 +363,9 @@ class ImageEditor:
 
         var_names = [
             "hue_var", "saturation_var", "value_var",
-            "contrast_var", "brightness_var", "alpha_var",
-            "r_hsv_var", "g_hsv_var", "b_hsv_var",
-            "r_contrast_var", "r_brightness_var",
-            "g_contrast_var", "g_brightness_var",
+            "contrast_var", "brightness_var", "r_hsv_var",
+            "g_hsv_var", "b_hsv_var", "r_contrast_var",
+            "r_brightness_var", "g_contrast_var", "g_brightness_var",
             "b_contrast_var", "b_brightness_var"
         ]
 
@@ -348,7 +397,6 @@ class ImageEditor:
                 self.value_var.set(0)
                 self.contrast_var.set(0)
                 self.brightness_var.set(0)
-                self.alpha_var.set(100)
 
                 # Reset RGB channel HSV sliders
                 self.r_hsv_var.set(0)
@@ -406,7 +454,6 @@ class ImageEditor:
         value = self.value_var.get()
         contrast = self.contrast_var.get()
         brightness = self.brightness_var.get()
-        alpha = self.alpha_var.get() / 100.0
 
         # Get RGB channel adjustment values
         # HSV rotation
@@ -539,10 +586,6 @@ class ImageEditor:
             # Apply global contrast and brightness
             modified = cv2.convertScaleAbs(modified, alpha=1 + contrast/100, beta=brightness)
 
-        # Apply alpha
-        if alpha < 1.0:
-            modified = cv2.addWeighted(self.original_image, 1-alpha, modified, alpha, 0)
-
         self.current_image = modified
 
         # Update display
@@ -552,20 +595,79 @@ class ImageEditor:
         """
         Display the current image on the canvas.
         The image is automatically resized to fit the canvas while maintaining aspect ratio.
+        If zoom is active, displays the zoomed portion of the image.
         """
-        if self.current_image is not None:
-            # Resize image to fit canvas while maintaining aspect ratio
-            canvas_width = self.canvas.winfo_width()
-            canvas_height = self.canvas.winfo_height()
+        if self.current_image is None:
+            return
 
-            # If canvas hasn't been drawn yet, use the configured size
-            if canvas_width <= 1 or canvas_height <= 1:
-                canvas_width = 800  # Default width
-                canvas_height = 600  # Default height
+        # Resize image to fit canvas while maintaining aspect ratio
+        canvas_width = self.canvas.winfo_width()
+        canvas_height = self.canvas.winfo_height()
 
-            img_height, img_width = self.current_image.shape[:2]
+        # If canvas hasn't been drawn yet, use the configured size
+        if canvas_width <= 1 or canvas_height <= 1:
+            canvas_width = 800  # Default width
+            canvas_height = 600  # Default height
+
+        img_height, img_width = self.current_image.shape[:2]
+
+        # If zoom is active, calculate the zoomed view
+        if self.zoom_active and self.zoom_factor > 1.0 and self.zoom_x is not None and self.zoom_y is not None:
+            # Calculate the size of the zoomed region
+            view_width = int(img_width / self.zoom_factor)
+            view_height = int(img_height / self.zoom_factor)
+
+            # Make sure we have valid dimensions
+            if view_width <= 0 or view_height <= 0:
+                view_width = max(1, view_width)
+                view_height = max(1, view_height)
+
+            # Calculate the top-left corner of the zoomed region
+            x1 = max(0, int(self.zoom_x - view_width // 2))
+            y1 = max(0, int(self.zoom_y - view_height // 2))
+
+            # Adjust if we're out of bounds
+            if x1 + view_width > img_width:
+                x1 = max(0, img_width - view_width)
+            if y1 + view_height > img_height:
+                y1 = max(0, img_height - view_height)
+
+            # Extract the zoomed region
+            try:
+                zoomed_region = self.current_image[y1:y1+view_height, x1:x1+view_width]
+
+                # Make sure the zoomed region is not empty
+                if zoomed_region.size == 0:
+                    # Fall back to standard display
+                    display_img = self.current_image
+                else:
+                    # Resize to original dimensions for display
+                    display_img = cv2.resize(zoomed_region, (img_width, img_height), interpolation=cv2.INTER_LINEAR)
+            except Exception as e:
+                print(f"Zoom error: {str(e)}")
+                # Fall back to standard display
+                display_img = self.current_image
+
+            # Calculate scale to fit in canvas
             scale = min(canvas_width/img_width, canvas_height/img_height)
+            new_width = int(img_width * scale)
+            new_height = int(img_height * scale)
 
+            # Create the final image for display
+            resized = cv2.resize(display_img, (new_width, new_height))
+
+            # Convert to PhotoImage
+            self.photo = ImageTk.PhotoImage(image=Image.fromarray(resized))
+
+            # Update canvas
+            self.canvas.delete("all")
+            self.canvas.create_image(
+                canvas_width//2, canvas_height//2,
+                image=self.photo, anchor=tk.CENTER
+            )
+        else:
+            # Standard non-zoomed display
+            scale = min(canvas_width/img_width, canvas_height/img_height)
             new_width = int(img_width * scale)
             new_height = int(img_height * scale)
 
@@ -629,9 +731,6 @@ class ImageEditor:
         self.reset_green()
         self.reset_blue()
 
-        # Reset alpha
-        self.alpha_var.set(100)
-
         # Update the image
         self.update_image()
 
@@ -660,7 +759,6 @@ class ImageEditor:
             value = self.value_var.get()
             contrast = self.contrast_var.get()
             brightness = self.brightness_var.get()
-            alpha = self.alpha_var.get() / 100.0  # Convert to 0-1 range
             r_hsv = self.r_hsv_var.get()
             g_hsv = self.g_hsv_var.get()
             b_hsv = self.b_hsv_var.get()
@@ -673,7 +771,7 @@ class ImageEditor:
 
             # Create the code string with proper variable values
             code = self._generate_python_script(
-                hue, saturation, value, contrast, brightness, alpha,
+                hue, saturation, value, contrast, brightness,
                 r_hsv, g_hsv, b_hsv, r_contrast, g_contrast, b_contrast,
                 r_brightness, g_brightness, b_brightness
             )
@@ -687,7 +785,7 @@ class ImageEditor:
         except Exception as e:
             messagebox.showerror("Error", f"Error exporting code: {str(e)}")
 
-    def _generate_python_script(self, hue, saturation, value, contrast, brightness, alpha,
+    def _generate_python_script(self, hue, saturation, value, contrast, brightness,
                                r_hsv, g_hsv, b_hsv, r_contrast, g_contrast, b_contrast,
                                r_brightness, g_brightness, b_brightness):
         """
@@ -736,7 +834,6 @@ class ImageEditor:
         code.append(f'    value = {value}')
         code.append(f'    contrast = {contrast}')
         code.append(f'    brightness = {brightness}')
-        code.append(f'    alpha = {alpha}')
         code.append(f'    r_hsv = {r_hsv}')
         code.append(f'    g_hsv = {g_hsv}')
         code.append(f'    b_hsv = {b_hsv}')
@@ -862,10 +959,6 @@ class ImageEditor:
         code.append('        # Apply global contrast and brightness')
         code.append('        modified = cv2.convertScaleAbs(modified, alpha=1 + contrast/100, beta=brightness)')
         code.append('    ')
-        code.append('    # Apply alpha')
-        code.append('    if alpha < 1.0:')
-        code.append('        modified = cv2.addWeighted(original_image, 1-alpha, modified, alpha, 0)')
-        code.append('    ')
         code.append('    # Convert back to BGR for saving or display')
         code.append('    output_image = cv2.cvtColor(modified, cv2.COLOR_RGB2BGR)')
         code.append('    ')
@@ -890,6 +983,108 @@ class ImageEditor:
         code.append('    process_image(input_path, output_path)')
 
         return '\n'.join(code)
+
+    def toggle_zoom(self):
+        """Toggle zoom functionality on/off"""
+        self.zoom_active = not self.zoom_active
+        if self.zoom_active:
+            # Set cursor to crosshair to indicate zoom mode
+            self.canvas.config(cursor="crosshair")
+
+            # If zoom center is not set yet, set it to the center of the image
+            if self.current_image is not None and (self.zoom_x is None or self.zoom_y is None):
+                img_height, img_width = self.current_image.shape[:2]
+                self.zoom_x = img_width // 2
+                self.zoom_y = img_height // 2
+                print(f"Zoom center initialized to image center: ({self.zoom_x}, {self.zoom_y})")
+
+            # Update the zoom level label
+            if hasattr(self, 'zoom_level_label') and self.zoom_level_label is not None:
+                self.zoom_level_label.config(text=f"{self.zoom_factor:.1f}x")
+
+            # Update display to apply zoom
+            self.display_image()
+        else:
+            # Reset cursor
+            self.canvas.config(cursor="")
+
+            # Reset zoom factor but not center (in case we want to zoom the same spot)
+            self.zoom_scale.set(1.0)
+
+            # Update the display
+            self.display_image()
+
+    def set_zoom_center(self, event):
+        """Set the center point for zooming"""
+        if not self.zoom_active or self.current_image is None:
+            return
+
+        # Get the canvas dimensions
+        canvas_width = self.canvas.winfo_width()
+        canvas_height = self.canvas.winfo_height()
+
+        # Calculate the scale factor between original image and displayed image
+        img_height, img_width = self.current_image.shape[:2]
+        scale = min(canvas_width/img_width, canvas_height/img_height)
+
+        # Calculate displayed dimensions
+        disp_width = int(img_width * scale)
+        disp_height = int(img_height * scale)
+
+        # Calculate the offset (image is centered in canvas)
+        x_offset = (canvas_width - disp_width) // 2
+        y_offset = (canvas_height - disp_height) // 2
+
+        # Convert canvas coordinates to image coordinates
+        if (event.x < x_offset or event.x >= x_offset + disp_width or
+            event.y < y_offset or event.y >= y_offset + disp_height):
+            # Clicked outside the image area
+            return
+
+        # Convert to image coordinates
+        img_x = int((event.x - x_offset) / scale)
+        img_y = int((event.y - y_offset) / scale)
+
+        # Store as center point for zooming
+        self.zoom_x = img_x
+        self.zoom_y = img_y
+
+        # Update the display with the new zoom center
+        self.display_image()
+
+        # Print debug info
+        print(f"Zoom center set to: ({img_x}, {img_y})")
+
+    def update_zoom_factor(self, value):
+        """Update the zoom factor and refresh the display"""
+        try:
+            self.zoom_factor = float(value)
+            # Check if zoom_level_label exists before trying to update it
+            if hasattr(self, 'zoom_level_label') and self.zoom_level_label is not None:
+                self.zoom_level_label.config(text=f"{self.zoom_factor:.1f}x")
+            # Only apply zoom if zoom is active
+            if self.zoom_active:
+                self.display_image()
+        except ValueError:
+            pass  # Ignore errors from non-numeric input
+
+    def reset_zoom(self):
+        """Reset zoom to default values"""
+        self.zoom_factor = 1.0
+        self.zoom_scale.set(1.0)
+        if hasattr(self, 'zoom_level_label') and self.zoom_level_label is not None:
+            self.zoom_level_label.config(text="1.0x")
+        # Clear any zoom rectangle
+        if self.zoom_rect_id:
+            self.canvas.delete(self.zoom_rect_id)
+            self.zoom_rect_id = None
+        # Update display
+        self.display_image()
+
+    def update_zoom_preview(self, event):
+        """Update the zoom preview - this method is not used for actual zooming"""
+        # The current implementation doesn't need to update on mouse movement
+        pass
 
 if __name__ == "__main__":
     # Check command line arguments

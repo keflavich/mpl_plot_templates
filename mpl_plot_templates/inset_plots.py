@@ -106,17 +106,18 @@ def hide_ticks(ax):
 def make_scalebar(ax, left_side, length, color='w', linestyle='-', label='',
                   fontsize=12, text_offset=0.1*u.arcsec):
     axlims = ax.axis()
-    lines = ax.plot(u.Quantity([left_side.ra, left_side.ra-length]),
-                    u.Quantity([left_side.dec]*2),
+
+    lines = ax.plot(u.Quantity([left_side.spherical.lon, left_side.spherical.lon-length]),
+                    u.Quantity([left_side.spherical.lat]*2),
                     color=color, linestyle=linestyle, marker=None,
-                    transform=ax.get_transform('fk5'),
+                    transform=ax.get_transform('world'),
                    )
-    txt = ax.text((left_side.ra-length/2).to(u.deg).value,
-                  (left_side.dec+text_offset).to(u.deg).value,
+    txt = ax.text((left_side.spherical.lon-length/2).to(u.deg).value,
+                  (left_side.spherical.lat+text_offset).to(u.deg).value,
                   label,
                   verticalalignment='bottom',
                   horizontalalignment='center',
-                  transform=ax.get_transform('fk5'),
+                  transform=ax.get_transform('world'),
                   color=color,
                   fontsize=fontsize,
                  )

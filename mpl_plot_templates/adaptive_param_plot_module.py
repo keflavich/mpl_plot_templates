@@ -47,14 +47,14 @@ def adaptive_param_plot(x,y,
         Any valid marker color
     ncontours: int
         Number of contour levels
-    levels: None or list 
+    levels: None or list
         Optional override for automatically computed levels
     fill: bool
         Use filled contours?
     mesh: bool
         Use a color mesh instead of contours (i.e., filled pixels)
     contourspacing: function
-        A function to determine the contour spacing.  Should be 
+        A function to determine the contour spacing.  Should be
         np.linspace or the linlogspace function
         defined above.  The function must accept arguments of:
         lowest contour level, highest contour level, number of contours
@@ -69,7 +69,7 @@ def adaptive_param_plot(x,y,
     kwargs: dict
         Passed to plot, contour, AND colormesh, so must be valid for ALL 3!
     """
-    
+
     if axis is None:
         axis = pl.gca()
 
@@ -131,7 +131,7 @@ def adaptive_param_plot(x,y,
     if mesh:
         mesh = axis.pcolormesh(bx,by,H.T, **kwargs)
         mesh.set_alpha(mesh_alpha)
-    
+
     if 'linestyle' in kwargs:
         kwargs.pop('linestyle')
 
@@ -144,4 +144,4 @@ def adaptive_param_plot(x,y,
                   markeredgecolor=marker_color,
                   **kwargs)
 
-    return cx,cy,H,x[ok][toplot],y[ok][toplot],levels
+    return cx,cy,H,x[ok][toplot],y[ok][toplot],levels, con
